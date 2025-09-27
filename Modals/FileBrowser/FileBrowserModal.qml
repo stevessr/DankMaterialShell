@@ -46,6 +46,18 @@ DankModal {
         return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(ext)
     }
 
+    function isVideoFile(fileName) {
+        if (!fileName) {
+            return false
+        }
+        const ext = fileName.toLowerCase().split('.').pop()
+        return ['mp4', 'webm', 'avi', 'mov', 'mkv', 'wmv', 'flv', 'm4v'].includes(ext)
+    }
+
+    function isWallpaperFile(fileName) {
+        return isImageFile(fileName) || isVideoFile(fileName)
+    }
+
     function getLastPath() {
         const lastPath = browserType === "wallpaper" ? SessionData.wallpaperLastPath : browserType === "profile" ? SessionData.profileLastPath : ""
         return (lastPath && lastPath !== "") ? lastPath : homeDir
@@ -593,7 +605,7 @@ DankModal {
 
                                 DankIcon {
                                     anchors.centerIn: parent
-                                    name: "description"
+                                    name: isVideoFile(delegateRoot.fileName) ? "movie" : "description"
                                     size: Theme.iconSizeLarge
                                     color: Theme.primary
                                     visible: !delegateRoot.fileIsDir && !isImageFile(delegateRoot.fileName)

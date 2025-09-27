@@ -218,7 +218,7 @@ Singleton {
             }
 
             if (process) {
-                process.command = ["sh", "-c", `ls -1 "${wallpaperDir}"/*.jpg "${wallpaperDir}"/*.jpeg "${wallpaperDir}"/*.png "${wallpaperDir}"/*.bmp "${wallpaperDir}"/*.gif "${wallpaperDir}"/*.webp 2>/dev/null | sort`]
+                process.command = ["sh", "-c", `ls -1 "${wallpaperDir}"/*.jpg "${wallpaperDir}"/*.jpeg "${wallpaperDir}"/*.png "${wallpaperDir}"/*.bmp "${wallpaperDir}"/*.gif "${wallpaperDir}"/*.webp "${wallpaperDir}"/*.mp4 "${wallpaperDir}"/*.webm "${wallpaperDir}"/*.avi "${wallpaperDir}"/*.mov "${wallpaperDir}"/*.mkv "${wallpaperDir}"/*.wmv "${wallpaperDir}"/*.flv "${wallpaperDir}"/*.m4v 2>/dev/null | sort`]
                 process.targetScreenName = screenName
                 process.currentWallpaper = currentWallpaper
                 process.goToPrevious = false
@@ -226,7 +226,7 @@ Singleton {
             }
         } else {
             // Use global process for fallback
-            cyclingProcess.command = ["sh", "-c", `ls -1 "${wallpaperDir}"/*.jpg "${wallpaperDir}"/*.jpeg "${wallpaperDir}"/*.png "${wallpaperDir}"/*.bmp "${wallpaperDir}"/*.gif "${wallpaperDir}"/*.webp 2>/dev/null | sort`]
+            cyclingProcess.command = ["sh", "-c", `ls -1 "${wallpaperDir}"/*.jpg "${wallpaperDir}"/*.jpeg "${wallpaperDir}"/*.png "${wallpaperDir}"/*.bmp "${wallpaperDir}"/*.gif "${wallpaperDir}"/*.webp "${wallpaperDir}"/*.mp4 "${wallpaperDir}"/*.webm "${wallpaperDir}"/*.avi "${wallpaperDir}"/*.mov "${wallpaperDir}"/*.mkv "${wallpaperDir}"/*.wmv "${wallpaperDir}"/*.flv "${wallpaperDir}"/*.m4v 2>/dev/null | sort`]
             cyclingProcess.targetScreenName = screenName || ""
             cyclingProcess.currentWallpaper = currentWallpaper
             cyclingProcess.running = true
@@ -250,7 +250,7 @@ Singleton {
             }
 
             if (process) {
-                process.command = ["sh", "-c", `ls -1 "${wallpaperDir}"/*.jpg "${wallpaperDir}"/*.jpeg "${wallpaperDir}"/*.png "${wallpaperDir}"/*.bmp "${wallpaperDir}"/*.gif "${wallpaperDir}"/*.webp 2>/dev/null | sort`]
+                process.command = ["sh", "-c", `ls -1 "${wallpaperDir}"/*.jpg "${wallpaperDir}"/*.jpeg "${wallpaperDir}"/*.png "${wallpaperDir}"/*.bmp "${wallpaperDir}"/*.gif "${wallpaperDir}"/*.webp "${wallpaperDir}"/*.mp4 "${wallpaperDir}"/*.webm "${wallpaperDir}"/*.avi "${wallpaperDir}"/*.mov "${wallpaperDir}"/*.mkv "${wallpaperDir}"/*.wmv "${wallpaperDir}"/*.flv "${wallpaperDir}"/*.m4v 2>/dev/null | sort`]
                 process.targetScreenName = screenName
                 process.currentWallpaper = currentWallpaper
                 process.goToPrevious = true
@@ -258,7 +258,7 @@ Singleton {
             }
         } else {
             // Use global process for fallback
-            prevCyclingProcess.command = ["sh", "-c", `ls -1 "${wallpaperDir}"/*.jpg "${wallpaperDir}"/*.jpeg "${wallpaperDir}"/*.png "${wallpaperDir}"/*.bmp "${wallpaperDir}"/*.gif "${wallpaperDir}"/*.webp 2>/dev/null | sort`]
+            prevCyclingProcess.command = ["sh", "-c", `ls -1 "${wallpaperDir}"/*.jpg "${wallpaperDir}"/*.jpeg "${wallpaperDir}"/*.png "${wallpaperDir}"/*.bmp "${wallpaperDir}"/*.gif "${wallpaperDir}"/*.webp "${wallpaperDir}"/*.mp4 "${wallpaperDir}"/*.webm "${wallpaperDir}"/*.avi "${wallpaperDir}"/*.mov "${wallpaperDir}"/*.mkv "${wallpaperDir}"/*.wmv "${wallpaperDir}"/*.flv "${wallpaperDir}"/*.m4v 2>/dev/null | sort`]
             prevCyclingProcess.targetScreenName = screenName || ""
             prevCyclingProcess.currentWallpaper = currentWallpaper
             prevCyclingProcess.running = true

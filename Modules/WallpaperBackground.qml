@@ -1,4 +1,5 @@
 import QtQuick
+import QtMultimedia
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Widgets
@@ -36,6 +37,11 @@ LazyLoader {
 
                 property string source: SessionData.getMonitorWallpaper(modelData.name) || ""
                 property bool isColorSource: source.startsWith("#")
+                property bool isVideoSource: {
+                    if (!source || source.startsWith("#") || source.startsWith("we:")) return false
+                    const ext = source.toLowerCase().split('.').pop()
+                    return ['mp4', 'webm', 'avi', 'mov', 'mkv', 'wmv', 'flv', 'm4v'].includes(ext)
+                }
                 property string transitionType: SessionData.wallpaperTransition
                 property string actualTransitionType: transitionType
                 onTransitionTypeChanged: {
@@ -69,7 +75,7 @@ LazyLoader {
 
                 readonly property bool transitioning: transitionAnimation.running
 
-                property bool hasCurrent: currentWallpaper.status === Image.Ready && !!currentWallpaper.source
+                property bool hasCurrent: (currentWallpaper.status === Image.Ready && !!currentWallpaper.source) || (currentVideoPlayer.hasVideo && !!currentVideoPlayer.source)
                 property bool booting: !hasCurrent && nextWallpaper.status === Image.Ready
 
                 WallpaperEngineProc {
@@ -79,6 +85,8 @@ LazyLoader {
 
                 Component.onDestruction: {
                     weProc.stop()
+                    currentVideoPlayer.stop()
+                    nextVideoPlayer.stop()
                 }
 
                 onSourceChanged: {
@@ -96,7 +104,8 @@ LazyLoader {
                             setWallpaperImmediate("")
                         } else {
                             // Always set immediately if there's no current wallpaper (startup)
-                            if (!currentWallpaper.source) {
+                            const currentSource = currentWallpaper.source || currentVideoPlayer.source
+                            if (!currentSource) {
                                 setWallpaperImmediate(source.startsWith("file://") ? source : "file://" + source)
                             } else {
                                 changeWallpaper(source.startsWith("file://") ? source : "file://" + source)
@@ -108,14 +117,43 @@ LazyLoader {
                 function setWallpaperImmediate(newSource) {
                     transitionAnimation.stop()
                     root.transitionProgress = 0.0
-                    currentWallpaper.source = newSource
+                    
+                    // Stop any currently playing video
+                    currentVideoPlayer.stop()
+                    nextVideoPlayer.stop()
+                    
+                    // Clear all sources
+                    currentWallpaper.source = ""
                     nextWallpaper.source = ""
-                    currentWallpaper.visible = true
+                    currentVideoPlayer.source = ""
+                    nextVideoPlayer.source = ""
+                    
+                    if (newSource && !newSource.startsWith("#")) {
+                        const ext = newSource.toLowerCase().split('.').pop()
+                        const isVideo = ['mp4', 'webm', 'avi', 'mov', 'mkv', 'wmv', 'flv', 'm4v'].includes(ext)
+                        
+                        if (isVideo) {
+                            currentVideoPlayer.source = newSource
+                            currentVideoPlayer.play()
+                            currentVideoWallpaper.visible = true
+                            currentWallpaper.visible = false
+                        } else {
+                            currentWallpaper.source = newSource
+                            currentWallpaper.visible = true
+                            currentVideoWallpaper.visible = false
+                        }
+                    } else {
+                        currentWallpaper.visible = true
+                        currentVideoWallpaper.visible = false
+                    }
+                    
                     nextWallpaper.visible = false
+                    nextVideoWallpaper.visible = false
                 }
 
                 function changeWallpaper(newPath, force) {
-                    if (!force && newPath === currentWallpaper.source)
+                    const currentSource = currentWallpaper.source || currentVideoPlayer.source
+                    if (!force && newPath === currentSource)
                         return
                     if (!newPath || newPath.startsWith("#"))
                         return
@@ -123,12 +161,21 @@ LazyLoader {
                     if (root.transitioning) {
                         transitionAnimation.stop()
                         root.transitionProgress = 0
-                        currentWallpaper.source = nextWallpaper.source
-                        nextWallpaper.source = ""
+                        // Handle both image and video transitions
+                        if (nextWallpaper.source) {
+                            currentWallpaper.source = nextWallpaper.source
+                            nextWallpaper.source = ""
+                        }
+                        if (nextVideoPlayer.source) {
+                            currentVideoPlayer.source = nextVideoPlayer.source
+                            currentVideoPlayer.play()
+                            nextVideoPlayer.source = ""
+                            nextVideoPlayer.stop()
+                        }
                     }
 
                     // If no current wallpaper, set immediately to avoid scaling issues
-                    if (!currentWallpaper.source) {
+                    if (!currentSource) {
                         setWallpaperImmediate(newPath)
                         return
                     }
@@ -155,6 +202,15 @@ LazyLoader {
                     } else if (root.actualTransitionType === "stripes") {
                         root.stripesCount = Math.round(Math.random() * 20 + 4)
                         root.stripesAngle = Math.random() * 360
+                    }
+
+                    // For video files, use immediate change instead of transitions
+                    const ext = newPath.toLowerCase().split('.').pop()
+                    const isVideo = ['mp4', 'webm', 'avi', 'mov', 'mkv', 'wmv', 'flv', 'm4v'].includes(ext)
+                    
+                    if (isVideo) {
+                        setWallpaperImmediate(newPath)
+                        return
                     }
 
                     nextWallpaper.source = newPath
@@ -191,13 +247,31 @@ LazyLoader {
                 Image {
                     id: currentWallpaper
                     anchors.fill: parent
-                    visible: root.actualTransitionType === "none"
+                    visible: root.actualTransitionType === "none" && !root.isVideoSource
                     opacity: 1
                     layer.enabled: false
                     asynchronous: true
                     smooth: true
                     cache: true
                     fillMode: Image.PreserveAspectCrop
+                }
+
+                VideoOutput {
+                    id: currentVideoWallpaper
+                    anchors.fill: parent
+                    visible: root.actualTransitionType === "none" && root.isVideoSource
+                    opacity: 1
+                    fillMode: VideoOutput.PreserveAspectCrop
+                    
+                    property alias player: currentVideoPlayer
+                    
+                    MediaPlayer {
+                        id: currentVideoPlayer
+                        loops: MediaPlayer.Infinite
+                        audioOutput: AudioOutput {
+                            muted: true
+                        }
+                    }
                 }
 
                 Image {
@@ -216,7 +290,12 @@ LazyLoader {
                             return
 
                         if (root.actualTransitionType === "none") {
-                            currentWallpaper.source = source
+                            if (root.isVideoSource) {
+                                currentVideoPlayer.source = source
+                                currentVideoPlayer.play()
+                            } else {
+                                currentWallpaper.source = source
+                            }
                             nextWallpaper.source = ""
                             root.transitionProgress = 0.0
                         } else {
@@ -224,6 +303,24 @@ LazyLoader {
                             if (!root.transitioning) {
                                 transitionAnimation.start()
                             }
+                        }
+                    }
+                }
+
+                VideoOutput {
+                    id: nextVideoWallpaper
+                    anchors.fill: parent
+                    visible: false
+                    opacity: 0
+                    fillMode: VideoOutput.PreserveAspectCrop
+                    
+                    property alias player: nextVideoPlayer
+                    
+                    MediaPlayer {
+                        id: nextVideoPlayer
+                        loops: MediaPlayer.Infinite
+                        audioOutput: AudioOutput {
+                            muted: true
                         }
                     }
                 }
@@ -421,10 +518,21 @@ LazyLoader {
                         Qt.callLater(() => {
                                          if (nextWallpaper.source && nextWallpaper.status === Image.Ready && !nextWallpaper.source.toString().startsWith("#")) {
                                              currentWallpaper.source = nextWallpaper.source
+                                             currentWallpaper.visible = root.actualTransitionType === "none"
+                                             currentVideoWallpaper.visible = false
+                                             currentVideoPlayer.stop()
+                                         }
+                                         if (nextVideoPlayer.source) {
+                                             currentVideoPlayer.source = nextVideoPlayer.source
+                                             currentVideoPlayer.play()
+                                             currentVideoWallpaper.visible = root.actualTransitionType === "none"
+                                             currentWallpaper.visible = false
+                                             nextVideoPlayer.source = ""
+                                             nextVideoPlayer.stop()
                                          }
                                          nextWallpaper.source = ""
                                          nextWallpaper.visible = false
-                                         currentWallpaper.visible = root.actualTransitionType === "none"
+                                         nextVideoWallpaper.visible = false
                                          root.transitionProgress = 0.0
                                      })
                     }
